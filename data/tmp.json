@@ -1,0 +1,24 @@
+{
+    "prizes": [
+        {
+            "year": "2021",
+            "category": "chemistry",
+            "laureates": [
+                {
+                    "id": "1002",
+                    "firstname": "Benjamin",
+                    "surname": "List",
+                    "motivation": "\"for the development of asymmetric organocatalysis\"",
+                    "share": "2"
+                },
+                {
+                    "id": "1003",
+                    "firstname": "David",
+                    "surname": "MacMillan",
+                    "motivation": "\"for the development of asymmetric organocatalysis\"",
+                    "share": "2"
+                }
+            ]
+        }
+    ]
+}
