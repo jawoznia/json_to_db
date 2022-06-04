@@ -1,3 +1,5 @@
+mod json_loader;
+
 pub fn create_db(path: &str) {
     let connection = sqlite::open(path).unwrap();
 
