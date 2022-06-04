@@ -1,8 +1,14 @@
+use sqlite::Connection;
+
 mod json_loader;
 
-pub fn create_db(path: &str) {
-    let connection = sqlite::open(path).unwrap();
+pub fn init_db(db_path: &str, data_path: &str) {
+    let connection = sqlite::open(db_path).unwrap();
 
+    create_db(db_path, &connection);
+}
+
+fn create_db(db_path: &str, connection: &Connection) {
     connection
         .execute(
             "
@@ -29,7 +35,7 @@ mod tests {
     #[test]
     fn should_create_db() -> std::io::Result<()> {
         remove_db_if_present();
-        create_db("dummy.db");
+        init_db("dummy.db", "");
         fs::remove_file("dummy.db")?;
         Ok(())
     }
