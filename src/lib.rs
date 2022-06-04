@@ -10,14 +10,14 @@ struct Prizes {
 struct Prize {
     year: String,
     category: String,
-    laureates: Vec<Laureat>,
+    laureates: Option<Vec<Laureat>>,
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 struct Laureat {
     id: String,
     firstname: String,
-    surname: String,
+    surname: Option<String>,
     motivation: String,
     share: String,
 }
@@ -43,7 +43,6 @@ fn create_db(path: &str) {
 
 fn load_json(path: &str) -> Prizes {
     let json = fs::read_to_string(path).expect("Unable to read file.");
-    println!("{}", json);
     serde_json::from_str::<Prizes>(json.as_str()).expect("JSON was not well-formatted")
 }
 
@@ -51,8 +50,16 @@ fn load_json(path: &str) -> Prizes {
 mod tests {
     use super::*;
 
+    fn remove_db_if_present() {
+        match fs::remove_file("dummy.db") {
+            Ok(_) => (),
+            Err(_) => (),
+        }
+    }
+
     #[test]
     fn should_create_db() -> std::io::Result<()> {
+        remove_db_if_present();
         save_json_input_to_db("dummy.db", "data/prize.json");
         fs::remove_file("dummy.db")?;
         Ok(())
@@ -66,11 +73,11 @@ mod tests {
             prizes: vec![Prize {
                 year: String::from("2021"),
                 category: String::from("chemistry"),
-                laureates: vec![
+                laureates: Some(vec![
                     Laureat {
                         id: String::from("1002"),
                         firstname: String::from("Benjamin"),
-                        surname: String::from("List"),
+                        surname: Some(String::from("List")),
                         motivation: String::from(
                             "\"for the development of asymmetric organocatalysis\"",
                         ),
@@ -79,13 +86,13 @@ mod tests {
                     Laureat {
                         id: String::from("1003"),
                         firstname: String::from("David"),
-                        surname: String::from("MacMillan"),
+                        surname: Some(String::from("MacMillan")),
                         motivation: String::from(
                             "\"for the development of asymmetric organocatalysis\"",
                         ),
                         share: String::from("2"),
                     },
-                ],
+                ]),
             }],
         };
         assert_eq!(prizes, expected_prize);
