@@ -23,6 +23,24 @@ pub struct Laureat {
     share: String,
 }
 
+impl Laureat {
+    pub fn new(
+        id: String,
+        firstname: String,
+        surname: Option<String>,
+        motivation: String,
+        share: String,
+    ) -> Self {
+        Self {
+            id,
+            firstname,
+            surname,
+            motivation,
+            share,
+        }
+    }
+}
+
 pub fn load_data_from_json(path: &str) -> Prizes {
     let json = fs::read_to_string(path).expect("Unable to read file.");
     serde_json::from_str::<Prizes>(json.as_str()).expect("JSON was not well-formatted")
