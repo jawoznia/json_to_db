@@ -26,8 +26,11 @@ impl DbManager {
         Ok(())
     }
 
-    pub fn insert_data_to_db(&self, data_path: &str) -> Result<(), Error> {
-        let data = load_data_from_json(data_path);
+    pub fn insert_data_to_db(&self, data_path: &str) -> Result<(), String> {
+        let data = match load_data_from_json(data_path) {
+            Ok(prizes) => prizes,
+            Err(e) => return Err(e),
+        };
         for prize in data.prizes().iter() {
             if prize.laureates().is_none() {
                 continue;
@@ -47,7 +50,10 @@ impl DbManager {
                     &prize.category().replace('\'', "''"),
                 );
                 println!("{}", statement);
-                self.connection.execute(statement.as_str())?;
+                match self.connection.execute(statement.as_str()) {
+                    Ok(_) => (),
+                    Err(e) => return Err(format!("Failed to execute statement {}", e)),
+                }
             }
         }
         Ok(())
@@ -131,7 +137,7 @@ mod tests {
     fn should_load_all_prizes() -> Result<(), Error> {
         remove_db_if_present();
         let db_manager = DbManager::new("dummy.db")?;
-        db_manager.insert_data_to_db("data/prize.json")?;
+        db_manager.insert_data_to_db("data/prize.json").unwrap();
         Ok(())
     }
 
@@ -141,7 +147,9 @@ mod tests {
         remove_db_if_present();
 
         let db_manager = DbManager::new("dummy.db")?;
-        db_manager.insert_data_to_db("data/single_prize.json")?;
+        db_manager
+            .insert_data_to_db("data/single_prize.json")
+            .unwrap();
 
         let mut statement = db_manager
             .connection
@@ -177,7 +185,9 @@ mod tests {
     fn should_find_all_laureates_by_year() -> Result<(), Error> {
         remove_db_if_present();
         let db_manager = DbManager::new("dummy.db")?;
-        db_manager.insert_data_to_db("data/ten_category_prizes.json")?;
+        db_manager
+            .insert_data_to_db("data/ten_category_prizes.json")
+            .unwrap();
 
         let laureates = db_manager.get_laureats_by_year(2020)?;
         let expected_laureates = create_laureates();
@@ -194,7 +204,9 @@ mod tests {
     fn should_return_empty_vec() -> Result<(), Error> {
         remove_db_if_present();
         let db_manager = DbManager::new("dummy.db")?;
-        db_manager.insert_data_to_db("data/ten_category_prizes.json")?;
+        db_manager
+            .insert_data_to_db("data/ten_category_prizes.json")
+            .unwrap();
 
         let laureates = db_manager.get_laureats_by_year(2022)?;
         assert!(laureates.is_empty());
@@ -206,7 +218,9 @@ mod tests {
     fn should_find_all_laureates_since_year() -> Result<(), Error> {
         remove_db_if_present();
         let db_manager = DbManager::new("dummy.db")?;
-        db_manager.insert_data_to_db("data/ten_category_prizes.json")?;
+        db_manager
+            .insert_data_to_db("data/ten_category_prizes.json")
+            .unwrap();
 
         let laureates = db_manager.get_laureats_since(2020)?;
         let expected_laureates = create_laureates();
@@ -223,7 +237,9 @@ mod tests {
     fn should_find_all_laureates_since_single_year() -> Result<(), Error> {
         remove_db_if_present();
         let db_manager = DbManager::new("dummy.db")?;
-        db_manager.insert_data_to_db("data/ten_category_prizes.json")?;
+        db_manager
+            .insert_data_to_db("data/ten_category_prizes.json")
+            .unwrap();
 
         let laureates = db_manager.get_laureats_since(2021)?;
         let expected_laureates = create_laureates();
@@ -240,7 +256,9 @@ mod tests {
     fn since_year_should_return_empty_vec() -> Result<(), Error> {
         remove_db_if_present();
         let db_manager = DbManager::new("dummy.db")?;
-        db_manager.insert_data_to_db("data/ten_category_prizes.json")?;
+        db_manager
+            .insert_data_to_db("data/ten_category_prizes.json")
+            .unwrap();
 
         let laureates = db_manager.get_laureats_since(2022)?;
 
@@ -253,7 +271,9 @@ mod tests {
     fn should_find_all_laureates_by_category() -> Result<(), Error> {
         remove_db_if_present();
         let db_manager = DbManager::new("dummy.db")?;
-        db_manager.insert_data_to_db("data/ten_category_prizes.json")?;
+        db_manager
+            .insert_data_to_db("data/ten_category_prizes.json")
+            .unwrap();
 
         let laureates = db_manager.get_laureats_by_category(String::from("chemistry"))?;
         let mut expected_laureates = create_laureates();
@@ -272,7 +292,9 @@ mod tests {
     fn by_category_should_return_empty_vec() -> Result<(), Error> {
         remove_db_if_present();
         let db_manager = DbManager::new("dummy.db")?;
-        db_manager.insert_data_to_db("data/ten_category_prizes.json")?;
+        db_manager
+            .insert_data_to_db("data/ten_category_prizes.json")
+            .unwrap();
 
         let laureates = db_manager.get_laureats_by_category(String::from("biology"))?;
 
@@ -286,7 +308,9 @@ mod tests {
         remove_db_if_present();
         {
             let db_manager = DbManager::new("dummy.db")?;
-            db_manager.insert_data_to_db("data/ten_category_prizes.json")?;
+            db_manager
+                .insert_data_to_db("data/ten_category_prizes.json")
+                .unwrap();
         }
 
         let db_manager = DbManager::new("dummy.db")?;

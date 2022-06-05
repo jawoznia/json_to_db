@@ -1,10 +1,14 @@
 mod database;
 
 use database::DbManager;
-use sqlite::Error;
 
-pub fn create_database(db_path: &str, data_path: &str) -> Result<DbManager, Error> {
-    let db_manager = DbManager::new(db_path)?;
-    db_manager.insert_data_to_db(data_path)?;
-    Ok(db_manager)
+pub fn create_database(db_path: &str, data_path: &str) -> Result<DbManager, String> {
+    let db_manager = match DbManager::new(db_path) {
+        Ok(db_manager) => db_manager,
+        Err(e) => return Err(e.to_string()),
+    };
+    match db_manager.insert_data_to_db(data_path) {
+        Ok(_) => Ok(db_manager),
+        Err(e) => Err(e),
+    }
 }
