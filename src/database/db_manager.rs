@@ -23,7 +23,7 @@ impl DbManager {
         self.connection
             .execute(
                 "
-            CREATE TABLE laureates (id INTEGER, firstname TEXT, surname TEXT, motivation TEXT, share INTEGER, year INTEGER, category TEXT);
+            CREATE TABLE if not exists laureates (id INTEGER, firstname TEXT, surname TEXT, motivation TEXT, share INTEGER, year INTEGER, category TEXT);
             ",
             )?;
         Ok(())
@@ -280,6 +280,25 @@ mod tests {
         let laureates = db_manager.get_laureats_by_category(String::from("biology"))?;
 
         assert!(laureates.is_empty());
+        Ok(())
+    }
+
+    #[test]
+    #[serial]
+    fn do_not_create_new_db_if_one_exists() -> Result<(), Error> {
+        remove_db_if_present();
+        {
+            let db_manager = DbManager::new("dummy.db");
+            db_manager.insert_data_to_db("data/ten_category_prizes.json")?;
+        }
+
+        let db_manager = DbManager::new("dummy.db");
+        let laureates = db_manager.get_laureats_since(2020)?;
+        let expected_laureates = create_laureates();
+        laureates
+            .into_iter()
+            .zip(expected_laureates.into_iter())
+            .for_each(|(a, b)| assert_eq!(a, b));
         Ok(())
     }
 
