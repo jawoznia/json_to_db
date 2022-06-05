@@ -1,4 +1,4 @@
-use sqlite::{Connection, Error};
+use sqlite::{Connection, Error, State};
 
 use super::json_loader::*;
 
@@ -55,8 +55,22 @@ impl DbManager {
         Ok(())
     }
 
-    pub fn get_laureats_by_year(&self, year: u8) -> Result<Vec<Laureat>, Error> {
-        Ok(vec![])
+    pub fn get_laureats_by_year(&self, year: u32) -> Result<Vec<Laureat>, Error> {
+        let mut statement = self
+            .connection
+            .prepare(format!("SELECT * FROM laureates WHERE year == {}", year))?;
+
+        let mut laureates = vec![];
+        while let State::Row = statement.next().unwrap() {
+            laureates.push(Laureat::new(
+                statement.read::<String>(0).unwrap(),
+                statement.read::<String>(1).unwrap(),
+                Some(statement.read::<String>(2).unwrap()),
+                statement.read::<String>(3).unwrap(),
+                statement.read::<String>(4).unwrap(),
+            ));
+        }
+        Ok(laureates)
     }
     pub fn get_laureats_by_category(&self, category: String) -> Result<Vec<Laureat>, Error> {
         Ok(vec![])
@@ -71,14 +85,35 @@ mod tests {
     use std::fs;
 
     use serial_test::serial;
+    use sqlite::Statement;
 
     use super::*;
 
     fn remove_db_if_present() {
         match fs::remove_file("dummy.db") {
-            Ok(_) => println!("Successfully removed dummy"),
+            Ok(_) => (),
             Err(_) => (),
         }
+    }
+
+    fn match_laureates(
+        statement: &mut Statement,
+        id: i64,
+        firstname: String,
+        surname: String,
+        motivation: String,
+        share: i64,
+        year: i64,
+        category: String,
+    ) {
+        statement.next().unwrap();
+        assert_eq!(statement.read::<i64>(0).unwrap(), id);
+        assert_eq!(statement.read::<String>(1).unwrap(), firstname);
+        assert_eq!(statement.read::<String>(2).unwrap(), surname);
+        assert_eq!(statement.read::<String>(3).unwrap(), motivation);
+        assert_eq!(statement.read::<i64>(4).unwrap(), share);
+        assert_eq!(statement.read::<i64>(5).unwrap(), year);
+        assert_eq!(statement.read::<String>(6).unwrap(), category);
     }
 
     #[test]
@@ -110,29 +145,40 @@ mod tests {
             .connection
             .prepare("SELECT * FROM laureates")
             .unwrap();
-        statement.next().unwrap();
-        assert_eq!(statement.read::<i64>(0).unwrap(), 1002);
-        assert_eq!(statement.read::<String>(1).unwrap(), "Benjamin");
-        assert_eq!(statement.read::<String>(2).unwrap(), "List");
-        assert_eq!(
-            statement.read::<String>(3).unwrap(),
-            "\"for the development of asymmetric organocatalysis\""
-        );
-        assert_eq!(statement.read::<i64>(4).unwrap(), 2);
-        assert_eq!(statement.read::<i64>(5).unwrap(), 2021);
-        assert_eq!(statement.read::<String>(6).unwrap(), "chemistry");
 
-        statement.next().unwrap();
-        assert_eq!(statement.read::<i64>(0).unwrap(), 1003);
-        assert_eq!(statement.read::<String>(1).unwrap(), "David");
-        assert_eq!(statement.read::<String>(2).unwrap(), "MacMillan");
-        assert_eq!(
-            statement.read::<String>(3).unwrap(),
-            "\"for the development of asymmetric organocatalysis\""
+        match_laureates(
+            &mut statement,
+            1002,
+            String::from("Benjamin"),
+            String::from("List"),
+            String::from("\"for the development of asymmetric organocatalysis\""),
+            2,
+            2021,
+            String::from("chemistry"),
         );
-        assert_eq!(statement.read::<i64>(4).unwrap(), 2);
-        assert_eq!(statement.read::<i64>(5).unwrap(), 2021);
-        assert_eq!(statement.read::<String>(6).unwrap(), "chemistry");
+
+        match_laureates(
+            &mut statement,
+            1003,
+            String::from("David"),
+            String::from("MacMillan"),
+            String::from("\"for the development of asymmetric organocatalysis\""),
+            2,
+            2021,
+            String::from("chemistry"),
+        );
+        Ok(())
+    }
+
+    #[test]
+    #[serial]
+    fn should_find_all_laureates_by_year() -> Result<(), Error> {
+        remove_db_if_present();
+        let db_manager = DbManager::new("dummy.db");
+        db_manager.insert_data_to_db("data/ten_category_prizes.json")?;
+
+        let laureates = db_manager.get_laureats_by_year(2020)?;
+
         Ok(())
     }
 }
