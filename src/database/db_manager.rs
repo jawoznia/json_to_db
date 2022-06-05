@@ -22,8 +22,7 @@ impl DbManager {
         self.connection
             .execute(
                 "
-            CREATE TABLE prizes (year INTEGER, category TEXT);
-            CREATE TABLE laureates (id INTEGER, firstname TEXT, surname TEXT, motivation TEXT, share INTEGER, winning_year INTEGER);
+            CREATE TABLE laureates (id INTEGER, firstname TEXT, surname TEXT, motivation TEXT, share INTEGER, year INTEGER, category TEXT);
             ",
             )?;
         Ok(())
@@ -32,19 +31,12 @@ impl DbManager {
     pub fn insert_data_to_db(&self, data_path: &str) -> Result<(), Error> {
         let data = load_data_from_json(data_path);
         for prize in data.prizes().iter() {
-            let statement = format!(
-                "INSERT INTO prizes (year, category) values ({}, '{}')",
-                &prize.year(),
-                &prize.category()
-            );
-            self.connection.execute(statement)?;
-
             if prize.laureates().is_none() {
                 continue;
             }
             for laureat in prize.laureates().as_ref().unwrap() {
                 let statement = format!(
-                    "INSERT INTO laureates (id, firstname, surname, motivation, share, winning_year) values ({}, '{}', '{}', '{}', {}, {})",
+                    "INSERT INTO laureates (id, firstname, surname, motivation, share, year, category) values ({}, '{}', '{}', '{}', {}, {}, '{}')",
                     &laureat.id().parse::<i32>().unwrap(),
                     &laureat.firstname().replace('\'', "''"),
                     match &laureat.surname() {
@@ -54,6 +46,7 @@ impl DbManager {
                     &laureat.motivation().replace('\'', "''"),
                     &laureat.share().parse::<i32>().unwrap(),
                     &prize.year().parse::<i32>().unwrap(),
+                    &prize.category().replace('\'', "''"),
                 );
                 println!("{}", statement);
                 self.connection.execute(statement.as_str())?;
@@ -112,14 +105,6 @@ mod tests {
 
         let db_manager = DbManager::new("dummy.db");
         db_manager.insert_data_to_db("data/single_prize.json")?;
-        let mut statement = db_manager
-            .connection
-            .prepare("SELECT * FROM prizes")
-            .unwrap();
-
-        statement.next().unwrap();
-        assert_eq!(statement.read::<i64>(0).unwrap(), 2021);
-        assert_eq!(statement.read::<String>(1).unwrap(), "chemistry");
 
         let mut statement = db_manager
             .connection
@@ -134,6 +119,8 @@ mod tests {
             "\"for the development of asymmetric organocatalysis\""
         );
         assert_eq!(statement.read::<i64>(4).unwrap(), 2);
+        assert_eq!(statement.read::<i64>(5).unwrap(), 2021);
+        assert_eq!(statement.read::<String>(6).unwrap(), "chemistry");
 
         statement.next().unwrap();
         assert_eq!(statement.read::<i64>(0).unwrap(), 1003);
@@ -144,6 +131,8 @@ mod tests {
             "\"for the development of asymmetric organocatalysis\""
         );
         assert_eq!(statement.read::<i64>(4).unwrap(), 2);
+        assert_eq!(statement.read::<i64>(5).unwrap(), 2021);
+        assert_eq!(statement.read::<String>(6).unwrap(), "chemistry");
         Ok(())
     }
 }
