@@ -102,4 +102,12 @@ mod tests {
         }
         panic!("Shouldn't read file that does not exist. Possible lack in impl!");
     }
+
+    #[test]
+    fn try_load_file_with_corrupted_json() {
+        if let Err(_) = load_data_from_json("data/corrupted.json") {
+            return;
+        }
+        panic!("Shouldn't read corrupted json. Possible lack in impl!");
+    }
 }
