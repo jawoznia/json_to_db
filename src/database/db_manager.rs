@@ -161,6 +161,18 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    #[serial]
+    fn should_return_empty_vec() -> Result<(), Error> {
+        remove_db_if_present();
+        let db_manager = DbManager::new("dummy.db");
+        db_manager.insert_data_to_db("data/ten_category_prizes.json")?;
+
+        let laureates = db_manager.get_laureats_by_year(2022)?;
+        assert!(laureates.is_empty());
+        Ok(())
+    }
+
     fn remove_db_if_present() {
         match fs::remove_file("dummy.db") {
             Ok(_) => (),
