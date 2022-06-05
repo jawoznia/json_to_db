@@ -12,12 +12,17 @@ pub fn init_db(db_path: &str, data_path: &str) -> Result<(), Error> {
     Ok(())
 }
 
+#[allow(dead_code, unused)]
 pub fn get_laureats_by_year(year: u8) -> Result<Vec<Laureat>, Error> {
     Ok(vec![])
 }
+
+#[allow(dead_code, unused)]
 pub fn get_laureats_by_category(category: String) -> Result<Vec<Laureat>, Error> {
     Ok(vec![])
 }
+
+#[allow(dead_code, unused)]
 pub fn get_laureats_since(year: u8) -> Result<Vec<Laureat>, Error> {
     Ok(vec![])
 }

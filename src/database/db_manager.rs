@@ -6,6 +6,7 @@ pub struct DbManager {
     connection: Connection,
 }
 
+#[allow(dead_code, unused)]
 impl DbManager {
     pub fn new(db_path: &str) -> Self {
         let db_manager = DbManager {
