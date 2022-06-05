@@ -38,8 +38,6 @@ fn insert_data_to_db(data_path: &str, connection: &Connection) -> Result<(), Err
             let statement = format!(
                 "INSERT INTO laureates (id, firstname, surname, motivation, share, winning_year) values ({}, '{}', '{}', '{}', {}, {})",
                 &laureat.id().parse::<i32>().unwrap(),
-                // TODO: replace ' to \' should work but does not.
-                // TODO: Error { code: Some(1), message: Some("near \"s\": syntax error") }
                 &laureat.firstname().replace('\'', "''"),
                 match &laureat.surname() {
                     Some(surname) => surname.replace('\'', "''"),
