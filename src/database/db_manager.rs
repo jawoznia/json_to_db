@@ -90,33 +90,6 @@ mod tests {
 
     use super::*;
 
-    fn remove_db_if_present() {
-        match fs::remove_file("dummy.db") {
-            Ok(_) => (),
-            Err(_) => (),
-        }
-    }
-
-    fn match_laureates(
-        statement: &mut Statement,
-        id: i64,
-        firstname: String,
-        surname: String,
-        motivation: String,
-        share: i64,
-        year: i64,
-        category: String,
-    ) {
-        statement.next().unwrap();
-        assert_eq!(statement.read::<i64>(0).unwrap(), id);
-        assert_eq!(statement.read::<String>(1).unwrap(), firstname);
-        assert_eq!(statement.read::<String>(2).unwrap(), surname);
-        assert_eq!(statement.read::<String>(3).unwrap(), motivation);
-        assert_eq!(statement.read::<i64>(4).unwrap(), share);
-        assert_eq!(statement.read::<i64>(5).unwrap(), year);
-        assert_eq!(statement.read::<String>(6).unwrap(), category);
-    }
-
     #[test]
     #[serial]
     fn should_create_db() -> Result<(), Error> {
@@ -179,7 +152,99 @@ mod tests {
         db_manager.insert_data_to_db("data/ten_category_prizes.json")?;
 
         let laureates = db_manager.get_laureats_by_year(2020)?;
+        let expected_laureates = create_laureates_from_2020();
 
+        laureates
+            .into_iter()
+            .zip(expected_laureates.into_iter())
+            .for_each(|(a, b)| assert_eq!(a, b));
         Ok(())
+    }
+
+    fn remove_db_if_present() {
+        match fs::remove_file("dummy.db") {
+            Ok(_) => (),
+            Err(_) => (),
+        }
+    }
+
+    fn match_laureates(
+        statement: &mut Statement,
+        id: i64,
+        firstname: String,
+        surname: String,
+        motivation: String,
+        share: i64,
+        year: i64,
+        category: String,
+    ) {
+        statement.next().unwrap();
+        assert_eq!(statement.read::<i64>(0).unwrap(), id);
+        assert_eq!(statement.read::<String>(1).unwrap(), firstname);
+        assert_eq!(statement.read::<String>(2).unwrap(), surname);
+        assert_eq!(statement.read::<String>(3).unwrap(), motivation);
+        assert_eq!(statement.read::<i64>(4).unwrap(), share);
+        assert_eq!(statement.read::<i64>(5).unwrap(), year);
+        assert_eq!(statement.read::<String>(6).unwrap(), category);
+    }
+
+    fn create_laureates_from_2020() -> Vec<Laureat> {
+        let mut laureates = vec![];
+        // chemistry
+        laureates.push(Laureat::new(
+            String::from("991"),
+            String::from("Emmanuelle"),
+            Some(String::from("Charpentier")),
+            String::from("\"for the development of a method for genome editing\""),
+            String::from("2"),
+        ));
+        laureates.push(Laureat::new(
+            String::from("992"),
+            String::from("Jennifer A."),
+            Some(String::from("Doudna")),
+            String::from("\"for the development of a method for genome editing\""),
+            String::from("2"),
+        ));
+        // economics
+        laureates.push(Laureat::new(
+            String::from("995"),
+            String::from("Paul"),
+            Some(String::from("Milgrom")),
+            String::from(
+                "\"for improvements to auction theory and inventions of new auction formats\"",
+            ),
+            String::from("2"),
+        ));
+        laureates.push(Laureat::new(
+            String::from("996"),
+            String::from("Robert"),
+            Some(String::from("Wilson")),
+            String::from(
+                "\"for improvements to auction theory and inventions of new auction formats\"",
+            ),
+            String::from("2"),
+        ));
+        // literature
+        laureates.push(Laureat::new(
+            String::from("993"),
+            String::from("Louise"),
+            Some(String::from("Gl\u{00fc}ck")),
+            String::from(
+                "\"for her unmistakable poetic voice that with austere beauty makes individual existence universal\"",
+            ),
+            String::from("1"),
+        ));
+        // peace
+        laureates.push(Laureat::new(
+            String::from("994"),
+            String::from("World Food Programme"),
+            Some(String::from("")),
+            String::from(
+                "\"for its efforts to combat hunger, for its contribution to bettering conditions for peace in conflict-affected areas and for acting as a driving force in efforts to prevent the use of hunger as a weapon of war and conflict\"",
+            ),
+            String::from("1"),
+        ));
+
+        laureates
     }
 }
