@@ -58,19 +58,58 @@ fn insert_data_to_db(data_path: &str, connection: &Connection) -> Result<(), Err
 mod tests {
     use std::fs;
 
+    use serial_test::serial;
+
     use super::*;
 
     fn remove_db_if_present() {
         match fs::remove_file("dummy.db") {
-            Ok(_) => (),
+            Ok(_) => println!("Successfully removed dummy"),
             Err(_) => (),
         }
     }
 
     #[test]
+    #[serial]
     fn should_create_db() -> Result<(), Error> {
         remove_db_if_present();
         init_db("dummy.db", "data/prize.json")?;
+        Ok(())
+    }
+
+    #[test]
+    #[serial]
+    fn should_handle_single_prize() -> Result<(), Error> {
+        remove_db_if_present();
+        init_db("dummy.db", "data/single_prize.json")?;
+
+        let connection = sqlite::open("dummy.db").unwrap();
+        let mut statement = connection.prepare("SELECT * FROM prizes").unwrap();
+
+        statement.next().unwrap();
+        assert_eq!(statement.read::<i64>(0).unwrap(), 2021);
+        assert_eq!(statement.read::<String>(1).unwrap(), "chemistry");
+
+        let mut statement = connection.prepare("SELECT * FROM laureates").unwrap();
+        statement.next().unwrap();
+        assert_eq!(statement.read::<i64>(0).unwrap(), 1002);
+        assert_eq!(statement.read::<String>(1).unwrap(), "Benjamin");
+        assert_eq!(statement.read::<String>(2).unwrap(), "List");
+        assert_eq!(
+            statement.read::<String>(3).unwrap(),
+            "\"for the development of asymmetric organocatalysis\""
+        );
+        assert_eq!(statement.read::<i64>(4).unwrap(), 2);
+
+        statement.next().unwrap();
+        assert_eq!(statement.read::<i64>(0).unwrap(), 1003);
+        assert_eq!(statement.read::<String>(1).unwrap(), "David");
+        assert_eq!(statement.read::<String>(2).unwrap(), "MacMillan");
+        assert_eq!(
+            statement.read::<String>(3).unwrap(),
+            "\"for the development of asymmetric organocatalysis\""
+        );
+        assert_eq!(statement.read::<i64>(4).unwrap(), 2);
         Ok(())
     }
 }
