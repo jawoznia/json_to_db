@@ -1,7 +1,10 @@
 mod database;
 
-use database::init_db;
+use database::DbManager;
+use sqlite::Error;
 
-pub fn save_json_input_to_db(db_path: &str, json_path: &str) {
-    init_db(db_path, json_path).expect("Couldn't init db.");
+pub fn init_database(db_path: &str, data_path: &str) -> Result<DbManager, Error> {
+    let db_manager = DbManager::new(db_path)?;
+    db_manager.insert_data_to_db(data_path)?;
+    Ok(db_manager)
 }
