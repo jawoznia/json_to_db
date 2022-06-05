@@ -59,6 +59,22 @@ impl DbManager {
         Ok(())
     }
 
+    pub fn get_all_laureates(&self) -> Result<Vec<Laureat>, Error> {
+        let mut statement = self.connection.prepare("SELECT * FROM laureates")?;
+
+        let mut laureates = vec![];
+        while let State::Row = statement.next().unwrap() {
+            laureates.push(Laureat::new(
+                statement.read::<String>(0).unwrap(),
+                statement.read::<String>(1).unwrap(),
+                Some(statement.read::<String>(2).unwrap()),
+                statement.read::<String>(3).unwrap(),
+                statement.read::<String>(4).unwrap(),
+            ));
+        }
+        Ok(laureates)
+    }
+
     pub fn get_laureats_by_year(&self, year: u32) -> Result<Vec<Laureat>, Error> {
         let mut statement = self
             .connection
@@ -331,6 +347,25 @@ mod tests {
             return Ok(());
         }
         panic!("Opening db in non-existing directory should fail. Possible missing impl!");
+    }
+
+    #[test]
+    #[serial]
+    fn should_load_all_laureates() -> Result<(), Error> {
+        remove_db_if_present();
+        let db_manager = DbManager::new("dummy.db")?;
+        db_manager
+            .insert_data_to_db("data/ten_category_prizes.json")
+            .unwrap();
+
+        let laureates = db_manager.get_all_laureates()?;
+        let expected_laureates = create_laureates();
+
+        laureates
+            .into_iter()
+            .zip(expected_laureates.into_iter())
+            .for_each(|(a, b)| assert_eq!(a, b));
+        Ok(())
     }
 
     fn remove_db_if_present() {
