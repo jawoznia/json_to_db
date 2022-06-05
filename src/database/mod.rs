@@ -1,6 +1,6 @@
 use sqlite::{Connection, Error, State};
 
-pub mod json_loader;
+mod json_loader;
 use json_loader::*;
 
 pub struct DbManager {
