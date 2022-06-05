@@ -42,7 +42,7 @@ impl Laureat {
 }
 
 pub fn load_data_from_json(path: &str) -> Result<Prizes, String> {
-    match read_to_string(path) {
+    match fs::read_to_string(path) {
         Ok(data) => match serde_json::from_str::<Prizes>(data.as_str()) {
             Ok(prizes) => Ok(prizes),
             Err(e) => Err(format!("Error while parsing JSON: {:?}", e)),
@@ -52,10 +52,6 @@ pub fn load_data_from_json(path: &str) -> Result<Prizes, String> {
             path, e
         )),
     }
-}
-
-fn read_to_string(path: &str) -> Result<String, std::io::Error> {
-    fs::read_to_string(path)
 }
 
 #[cfg(test)]
