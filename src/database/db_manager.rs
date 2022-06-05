@@ -8,15 +8,12 @@ pub struct DbManager {
 
 #[allow(dead_code, unused)]
 impl DbManager {
-    pub fn new(db_path: &str) -> Self {
+    pub fn new(db_path: &str) -> Result<Self, Error> {
         let db_manager = DbManager {
-            connection: sqlite::open(db_path).unwrap(),
+            connection: sqlite::open(db_path)?,
         };
-        match db_manager.create_tables() {
-            Ok(_) => (),
-            Err(e) => eprintln!("Failed to create tables: {:?}", e),
-        }
-        db_manager
+        db_manager.create_tables()?;
+        Ok(db_manager)
     }
 
     fn create_tables(&self) -> Result<(), Error> {
@@ -133,7 +130,7 @@ mod tests {
     #[serial]
     fn should_load_all_prizes() -> Result<(), Error> {
         remove_db_if_present();
-        let db_manager = DbManager::new("dummy.db");
+        let db_manager = DbManager::new("dummy.db")?;
         db_manager.insert_data_to_db("data/prize.json")?;
         Ok(())
     }
@@ -143,7 +140,7 @@ mod tests {
     fn should_handle_single_prize() -> Result<(), Error> {
         remove_db_if_present();
 
-        let db_manager = DbManager::new("dummy.db");
+        let db_manager = DbManager::new("dummy.db")?;
         db_manager.insert_data_to_db("data/single_prize.json")?;
 
         let mut statement = db_manager
@@ -179,7 +176,7 @@ mod tests {
     #[serial]
     fn should_find_all_laureates_by_year() -> Result<(), Error> {
         remove_db_if_present();
-        let db_manager = DbManager::new("dummy.db");
+        let db_manager = DbManager::new("dummy.db")?;
         db_manager.insert_data_to_db("data/ten_category_prizes.json")?;
 
         let laureates = db_manager.get_laureats_by_year(2020)?;
@@ -196,7 +193,7 @@ mod tests {
     #[serial]
     fn should_return_empty_vec() -> Result<(), Error> {
         remove_db_if_present();
-        let db_manager = DbManager::new("dummy.db");
+        let db_manager = DbManager::new("dummy.db")?;
         db_manager.insert_data_to_db("data/ten_category_prizes.json")?;
 
         let laureates = db_manager.get_laureats_by_year(2022)?;
@@ -208,7 +205,7 @@ mod tests {
     #[serial]
     fn should_find_all_laureates_since_year() -> Result<(), Error> {
         remove_db_if_present();
-        let db_manager = DbManager::new("dummy.db");
+        let db_manager = DbManager::new("dummy.db")?;
         db_manager.insert_data_to_db("data/ten_category_prizes.json")?;
 
         let laureates = db_manager.get_laureats_since(2020)?;
@@ -225,7 +222,7 @@ mod tests {
     #[serial]
     fn should_find_all_laureates_since_single_year() -> Result<(), Error> {
         remove_db_if_present();
-        let db_manager = DbManager::new("dummy.db");
+        let db_manager = DbManager::new("dummy.db")?;
         db_manager.insert_data_to_db("data/ten_category_prizes.json")?;
 
         let laureates = db_manager.get_laureats_since(2021)?;
@@ -242,7 +239,7 @@ mod tests {
     #[serial]
     fn since_year_should_return_empty_vec() -> Result<(), Error> {
         remove_db_if_present();
-        let db_manager = DbManager::new("dummy.db");
+        let db_manager = DbManager::new("dummy.db")?;
         db_manager.insert_data_to_db("data/ten_category_prizes.json")?;
 
         let laureates = db_manager.get_laureats_since(2022)?;
@@ -255,7 +252,7 @@ mod tests {
     #[serial]
     fn should_find_all_laureates_by_category() -> Result<(), Error> {
         remove_db_if_present();
-        let db_manager = DbManager::new("dummy.db");
+        let db_manager = DbManager::new("dummy.db")?;
         db_manager.insert_data_to_db("data/ten_category_prizes.json")?;
 
         let laureates = db_manager.get_laureats_by_category(String::from("chemistry"))?;
@@ -274,7 +271,7 @@ mod tests {
     #[serial]
     fn by_category_should_return_empty_vec() -> Result<(), Error> {
         remove_db_if_present();
-        let db_manager = DbManager::new("dummy.db");
+        let db_manager = DbManager::new("dummy.db")?;
         db_manager.insert_data_to_db("data/ten_category_prizes.json")?;
 
         let laureates = db_manager.get_laureats_by_category(String::from("biology"))?;
@@ -288,11 +285,11 @@ mod tests {
     fn do_not_create_new_db_if_one_exists() -> Result<(), Error> {
         remove_db_if_present();
         {
-            let db_manager = DbManager::new("dummy.db");
+            let db_manager = DbManager::new("dummy.db")?;
             db_manager.insert_data_to_db("data/ten_category_prizes.json")?;
         }
 
-        let db_manager = DbManager::new("dummy.db");
+        let db_manager = DbManager::new("dummy.db")?;
         let laureates = db_manager.get_laureats_since(2020)?;
         let expected_laureates = create_laureates();
         laureates
@@ -300,6 +297,16 @@ mod tests {
             .zip(expected_laureates.into_iter())
             .for_each(|(a, b)| assert_eq!(a, b));
         Ok(())
+    }
+
+    #[test]
+    #[serial]
+    fn opening_db_with_wrong_path() -> Result<(), Error> {
+        remove_db_if_present();
+        if let Err(_) = DbManager::new("not_existing_dir/dummy.db") {
+            return Ok(());
+        }
+        panic!("Opening db in non-existing directory should fail. Possible missing impl!");
     }
 
     fn remove_db_if_present() {

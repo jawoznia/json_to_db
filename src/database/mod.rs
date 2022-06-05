@@ -7,7 +7,7 @@ mod db_manager;
 mod json_loader;
 
 pub fn init_db(db_path: &str, data_path: &str) -> Result<(), Error> {
-    let db_manager = DbManager::new(db_path);
+    let db_manager = DbManager::new(db_path)?;
     db_manager.insert_data_to_db(data_path)?;
     Ok(())
 }
