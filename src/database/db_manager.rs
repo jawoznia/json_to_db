@@ -73,11 +73,27 @@ impl DbManager {
         }
         Ok(laureates)
     }
+
     pub fn get_laureats_by_category(&self, category: String) -> Result<Vec<Laureat>, Error> {
         Ok(vec![])
     }
-    pub fn get_laureats_since(&self, year: u8) -> Result<Vec<Laureat>, Error> {
-        Ok(vec![])
+
+    pub fn get_laureats_since(&self, year: u32) -> Result<Vec<Laureat>, Error> {
+        let mut statement = self
+            .connection
+            .prepare(format!("SELECT * FROM laureates WHERE year >= {}", year))?;
+
+        let mut laureates = vec![];
+        while let State::Row = statement.next().unwrap() {
+            laureates.push(Laureat::new(
+                statement.read::<String>(0).unwrap(),
+                statement.read::<String>(1).unwrap(),
+                Some(statement.read::<String>(2).unwrap()),
+                statement.read::<String>(3).unwrap(),
+                statement.read::<String>(4).unwrap(),
+            ));
+        }
+        Ok(laureates)
     }
 }
 
@@ -152,11 +168,11 @@ mod tests {
         db_manager.insert_data_to_db("data/ten_category_prizes.json")?;
 
         let laureates = db_manager.get_laureats_by_year(2020)?;
-        let expected_laureates = create_laureates_from_2020();
+        let expected_laureates = create_laureates();
 
         laureates
             .into_iter()
-            .zip(expected_laureates.into_iter())
+            .zip(expected_laureates.into_iter().skip(3))
             .for_each(|(a, b)| assert_eq!(a, b));
         Ok(())
     }
@@ -169,6 +185,53 @@ mod tests {
         db_manager.insert_data_to_db("data/ten_category_prizes.json")?;
 
         let laureates = db_manager.get_laureats_by_year(2022)?;
+        assert!(laureates.is_empty());
+        Ok(())
+    }
+
+    #[test]
+    #[serial]
+    fn should_find_all_laureates_since_year() -> Result<(), Error> {
+        remove_db_if_present();
+        let db_manager = DbManager::new("dummy.db");
+        db_manager.insert_data_to_db("data/ten_category_prizes.json")?;
+
+        let laureates = db_manager.get_laureats_since(2020)?;
+        let expected_laureates = create_laureates();
+
+        laureates
+            .into_iter()
+            .zip(expected_laureates.into_iter())
+            .for_each(|(a, b)| assert_eq!(a, b));
+        Ok(())
+    }
+
+    #[test]
+    #[serial]
+    fn should_find_all_laureates_since_single_year() -> Result<(), Error> {
+        remove_db_if_present();
+        let db_manager = DbManager::new("dummy.db");
+        db_manager.insert_data_to_db("data/ten_category_prizes.json")?;
+
+        let laureates = db_manager.get_laureats_since(2021)?;
+        let expected_laureates = create_laureates();
+
+        laureates
+            .into_iter()
+            .zip(expected_laureates.into_iter())
+            .for_each(|(a, b)| assert_eq!(a, b));
+        Ok(())
+    }
+
+    #[test]
+    #[serial]
+    fn since_year_should_return_empty_vec() -> Result<(), Error> {
+        remove_db_if_present();
+        let db_manager = DbManager::new("dummy.db");
+        db_manager.insert_data_to_db("data/ten_category_prizes.json")?;
+
+        let laureates = db_manager.get_laureats_since(2022)?;
+
         assert!(laureates.is_empty());
         Ok(())
     }
@@ -200,8 +263,36 @@ mod tests {
         assert_eq!(statement.read::<String>(6).unwrap(), category);
     }
 
-    fn create_laureates_from_2020() -> Vec<Laureat> {
+    fn create_laureates() -> Vec<Laureat> {
         let mut laureates = vec![];
+        // 2021
+        // chemistry
+        laureates.push(Laureat::new(
+            String::from("1002"),
+            String::from("Benjamin"),
+            Some(String::from("List")),
+            String::from("\"for the development of asymmetric organocatalysis\""),
+            String::from("2"),
+        ));
+        laureates.push(Laureat::new(
+            String::from("1003"),
+            String::from("David"),
+            Some(String::from("MacMillan")),
+            String::from("\"for the development of asymmetric organocatalysis\""),
+            String::from("2"),
+        ));
+        // peace
+        laureates.push(Laureat::new(
+            String::from("1004"),
+            String::from("World Food Programme"),
+            Some(String::from("")),
+            String::from(
+                "\"for its efforts to combat hunger, for its contribution to bettering conditions for peace in conflict-affected areas and for acting as a driving force in efforts to prevent the use of hunger as a weapon of war and conflict\"",
+            ),
+            String::from("1"),
+        ));
+
+        // 2020
         // chemistry
         laureates.push(Laureat::new(
             String::from("991"),
@@ -217,25 +308,6 @@ mod tests {
             String::from("\"for the development of a method for genome editing\""),
             String::from("2"),
         ));
-        // economics
-        laureates.push(Laureat::new(
-            String::from("995"),
-            String::from("Paul"),
-            Some(String::from("Milgrom")),
-            String::from(
-                "\"for improvements to auction theory and inventions of new auction formats\"",
-            ),
-            String::from("2"),
-        ));
-        laureates.push(Laureat::new(
-            String::from("996"),
-            String::from("Robert"),
-            Some(String::from("Wilson")),
-            String::from(
-                "\"for improvements to auction theory and inventions of new auction formats\"",
-            ),
-            String::from("2"),
-        ));
         // literature
         laureates.push(Laureat::new(
             String::from("993"),
@@ -243,16 +315,6 @@ mod tests {
             Some(String::from("Gl\u{00fc}ck")),
             String::from(
                 "\"for her unmistakable poetic voice that with austere beauty makes individual existence universal\"",
-            ),
-            String::from("1"),
-        ));
-        // peace
-        laureates.push(Laureat::new(
-            String::from("994"),
-            String::from("World Food Programme"),
-            Some(String::from("")),
-            String::from(
-                "\"for its efforts to combat hunger, for its contribution to bettering conditions for peace in conflict-affected areas and for acting as a driving force in efforts to prevent the use of hunger as a weapon of war and conflict\"",
             ),
             String::from("1"),
         ));
