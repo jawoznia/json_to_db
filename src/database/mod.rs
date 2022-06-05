@@ -1,16 +1,14 @@
 use sqlite::Error;
 
 use self::json_loader::Laureat;
-use db_manager::{create_db, insert_data_to_db};
+use db_manager::DbManager;
 
 mod db_manager;
 mod json_loader;
 
 pub fn init_db(db_path: &str, data_path: &str) -> Result<(), Error> {
-    let connection = sqlite::open(db_path).unwrap();
-
-    create_db(&connection)?;
-    insert_data_to_db(data_path, &connection)?;
+    let db_manager = DbManager::new(db_path);
+    db_manager.insert_data_to_db(data_path)?;
     Ok(())
 }
 
