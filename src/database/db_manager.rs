@@ -75,7 +75,22 @@ impl DbManager {
     }
 
     pub fn get_laureats_by_category(&self, category: String) -> Result<Vec<Laureat>, Error> {
-        Ok(vec![])
+        let mut statement = self.connection.prepare(format!(
+            "SELECT * FROM laureates WHERE category == '{}'",
+            category
+        ))?;
+
+        let mut laureates = vec![];
+        while let State::Row = statement.next().unwrap() {
+            laureates.push(Laureat::new(
+                statement.read::<String>(0).unwrap(),
+                statement.read::<String>(1).unwrap(),
+                Some(statement.read::<String>(2).unwrap()),
+                statement.read::<String>(3).unwrap(),
+                statement.read::<String>(4).unwrap(),
+            ));
+        }
+        Ok(laureates)
     }
 
     pub fn get_laureats_since(&self, year: u32) -> Result<Vec<Laureat>, Error> {
@@ -231,6 +246,38 @@ mod tests {
         db_manager.insert_data_to_db("data/ten_category_prizes.json")?;
 
         let laureates = db_manager.get_laureats_since(2022)?;
+
+        assert!(laureates.is_empty());
+        Ok(())
+    }
+
+    #[test]
+    #[serial]
+    fn should_find_all_laureates_by_category() -> Result<(), Error> {
+        remove_db_if_present();
+        let db_manager = DbManager::new("dummy.db");
+        db_manager.insert_data_to_db("data/ten_category_prizes.json")?;
+
+        let laureates = db_manager.get_laureats_by_category(String::from("chemistry"))?;
+        let mut expected_laureates = create_laureates();
+        expected_laureates.remove(5);
+        expected_laureates.remove(2);
+
+        laureates
+            .into_iter()
+            .zip(expected_laureates.into_iter())
+            .for_each(|(a, b)| assert_eq!(a, b));
+        Ok(())
+    }
+
+    #[test]
+    #[serial]
+    fn by_category_should_return_empty_vec() -> Result<(), Error> {
+        remove_db_if_present();
+        let db_manager = DbManager::new("dummy.db");
+        db_manager.insert_data_to_db("data/ten_category_prizes.json")?;
+
+        let laureates = db_manager.get_laureats_by_category(String::from("biology"))?;
 
         assert!(laureates.is_empty());
         Ok(())
