@@ -93,10 +93,7 @@ mod tests {
 
     #[test]
     fn try_load_non_exisiting_file() {
-        if let Err(_) = load_data_from_json("data/i_dont_exist.json") {
-            return;
-        }
-        panic!("Shouldn't read file that does not exist. Possible lack in impl!");
+        load_data_from_json("data/i_dont_exist.json").unwrap_err();
     }
 
     #[test]
